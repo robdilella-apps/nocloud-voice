@@ -4,13 +4,20 @@ Speech-to-text for Android that runs entirely on your phone. You get a dictation
 
 > Tested on Google Pixel. Other Android phones may work. iPhone is not supported.
 
-## Why on-device?
-Cloud dictation apps send your audio to a server. If you walk outside and lose signal halfway through a sentence, the text can just disappear. NoCloud Voice runs the speech model on the phone, so:
+## Why I built this
+I'm Rob DiLella, and I dictate a lot on my Pixel. The cloud-based dictation app I tried kept losing my text when I walked outside where cell service is bad. It needed a connection to send my audio off and bring the words back, so when the signal dropped, my words were gone. Google's built-in voice typing leans on the cloud too.
+
+I wanted something fully local that works with zero signal. On my laptop I use a push-to-talk dictation app and love it, but I couldn't find anything like it for my Pixel. So I built this one.
+
+NoCloud Voice runs the speech models (Parakeet or Moonshine, via sherpa-onnx) right on the phone, so:
 - it works in airplane mode, in basements, and in dead zones
-- your voice and your text never leave the device
+- your voice and your text never leave the phone
 - there's no account, subscription, or server
 
-The design is inspired by desktop push-to-talk dictation tools.
+I've tested it on Pixel. Other Android phones may work. iPhone is not supported.
+
+## Help me improve it
+If you try it, I'd love to hear how it goes. Please [open an issue](https://github.com/robdilella-apps/nocloud-voice/issues) with bugs, ideas, or just to tell me which phone you used and whether it worked.
 
 ## Features
 - **Keyboard:** a big hold-to-talk bar (or tap once for hands-free), plus ABC / undo / space / delete / enter keys.
@@ -55,7 +62,7 @@ _Coming soon._
 ## Build from source
 Requirements: JDK 17, Android SDK (platform 35, build-tools 35), internet access for Gradle the first time.
 ```bash
-git clone <this repo> && cd nocloud-voice
+git clone https://github.com/robdilella-apps/nocloud-voice.git && cd nocloud-voice
 echo "sdk.dir=$HOME/Android/Sdk" > local.properties   # your SDK path
 ./gradlew assembleDebug testDebugUnitTest
 # APK: app/build/outputs/apk/debug/app-debug.apk
