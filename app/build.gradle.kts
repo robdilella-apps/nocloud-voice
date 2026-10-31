@@ -8,7 +8,7 @@ android {
         targetSdk = 35
         versionCode = 7
         versionName = "0.3.0"
-        ndk { abiFilters += (project.findProperty("abis") as String? ?: "arm64-v8a").split(",") } // Pixel phones = arm64
+        ndk { abiFilters += (project.findProperty("abis") as String? ?: "arm64-v8a").split(",") } // 64-bit ARM Android phones
     }
     buildTypes { release { isMinifyEnabled = false } }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }

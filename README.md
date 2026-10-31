@@ -1,20 +1,20 @@
 # NoCloud Voice
 
-Speech-to-text for Android that runs entirely on your phone. You get a dictation **keyboard** and a **floating tap-to-talk bubble** that types into almost any app. It works with no cell signal and nothing you say leaves the phone.
+Free, on-device voice dictation for Android phones. You get a dictation **keyboard** and a **floating tap-to-talk bubble** that types into almost any app. It works with no cell signal and nothing you say leaves the phone.
 
-> Tested on Google Pixel. Other Android phones may work. iPhone is not supported.
+> Free, on-device voice dictation for Android phones. Developed and tested on a Google Pixel. It should work on other Android phones running Android 10 or newer with a 64-bit ARM (arm64-v8a) processor. Please [tell me in Issues](https://github.com/robdilella-apps/nocloud-voice/issues) which phones work for you. Android only.
 
 ## Why I built this
-I'm Rob DiLella, and I dictate a lot on my Pixel. The cloud-based dictation app I tried kept losing my text when I walked outside where cell service is bad. It needed a connection to send my audio off and bring the words back, so when the signal dropped, my words were gone. Google's built-in voice typing leans on the cloud too.
+I'm Rob DiLella, and I dictate a lot on my phone. The cloud-based dictation app I tried kept losing my text when I walked outside where cell service is bad. It needed a connection to send my audio off and bring the words back, so when the signal dropped, my words were gone. Google's built-in voice typing leans on the cloud too.
 
-I wanted something fully local that works with zero signal. On my laptop I use a push-to-talk dictation app and love it, but I couldn't find anything like it for my Pixel. So I built this one.
+I wanted something fully local that works with zero signal. On my laptop I use a push-to-talk dictation app and love it, but I couldn't find anything like it for Android. So I built this one.
 
 NoCloud Voice runs the speech models (Parakeet or Moonshine, via sherpa-onnx) right on the phone, so:
 - it works in airplane mode, in basements, and in dead zones
 - your voice and your text never leave the phone
 - there's no account, subscription, or server
 
-I've tested it on Pixel. Other Android phones may work. iPhone is not supported.
+I develop and test it on a Google Pixel. It should work on other Android phones running Android 10 or newer with a 64-bit ARM (arm64-v8a) processor, but I haven't tested those yet. It's Android only.
 
 ## Help me improve it
 If you try it, I'd love to hear how it goes. Please [open an issue](https://github.com/robdilella-apps/nocloud-voice/issues) with bugs, ideas, or just to tell me which phone you used and whether it worked.
@@ -33,7 +33,7 @@ If you try it, I'd love to hear how it goes. Please [open an issue](https://gith
 _Coming soon._
 <!-- docs/keyboard.png, docs/bubble.png, docs/setup.png -->
 
-## Install on a Pixel (from GitHub Releases)
+## Install on Android (from GitHub Releases)
 1. On your phone, open this repo's **[Releases](https://github.com/robdilella-apps/nocloud-voice/releases)** page and tap **NoCloud-Voice-0.3.0.apk** under *Assets*.
 2. Chrome may say the file could be harmful. Tap **Download anyway**.
 3. When it finishes, tap **Open**. (Or open the **Files** app > **Downloads** and tap the APK.)
@@ -56,8 +56,8 @@ _Coming soon._
 - **Two bubbles?** The faded one is Android's own *accessibility shortcut* button, not this app. Turn it off in Settings > Accessibility > NoCloud Voice floating button > shortcut toggle.
 - Model sizes: Parakeet needs about 662 MB of storage and roughly 1 GB of RAM while running. Moonshine needs about 287 MB.
 - The first dictation after the app starts is slower while the model loads.
-- Only arm64 phones (all recent Pixels). The APK is debug-signed, not from the Play Store. Android 17's Advanced Protection mode may turn off the accessibility permission.
-- Testing so far has been on Pixel. Other phones may work, but there are no promises. **iPhone is not supported.**
+- Needs Android 10 or newer and a 64-bit ARM (arm64-v8a) processor, which covers most phones from the last several years. The APK is debug-signed, not from the Play Store. Android 17's Advanced Protection mode may turn off the accessibility permission.
+- Developed and tested on a Google Pixel only so far. Other Android phones should work but haven't been tested; menu names in the install steps may differ slightly by brand. Please report which phones work in [Issues](https://github.com/robdilella-apps/nocloud-voice/issues). Android only.
 
 ## Build from source
 Requirements: JDK 17, Android SDK (platform 35, build-tools 35), internet access for Gradle the first time.
