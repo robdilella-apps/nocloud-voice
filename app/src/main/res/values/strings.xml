@@ -1,0 +1,4 @@
+<resources>
+    <string name="a11y_desc">Lets the NoCloud Voice floating button type your dictated words into the text box you are using. It only acts on the focused text field when you tap the check mark. Nothing is uploaded.</string>
+    <string name="a11y_summary">Types your dictated words into the text box you are using.</string>
+</resources>
