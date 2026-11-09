@@ -14,3 +14,13 @@ class TextTest {
     @Test fun salonOff() = assertEquals("Use seven oh one", p("use seven oh one"))
     @Test fun empty() = assertEquals("", p("   "))
 }
+
+class DictTest {
+    private val d = "jon=> John\nKatelyn => Caitlin\nparis => Paris"
+    private fun p(s: String) = PostProcessor.processWith(s, true, true, d, false)
+    @Test fun noSpaceBeforeArrow() = assertEquals("Tell John and Caitlin hi.", p("tell Jon and katelyn hi."))
+    @Test fun possessive() = assertEquals("John's chair", p("Jon's chair"))
+    @Test fun notInsideWords() = assertEquals("Jonas", p("jonas"))
+    @Test fun parsedCount() = assertEquals(3, PostProcessor.parseDict(d).size)
+    @Test fun cachedResultSame() { val a = p("jon"); val b = p("jon"); assertEquals("John", a); assertEquals(a, b) }
+}

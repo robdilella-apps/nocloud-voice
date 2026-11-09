@@ -27,6 +27,7 @@ import java.util.concurrent.Executors
 class TalkBar(ctx: Context, private val onText: (String) -> Unit, private val onNeedSetup: () -> Unit, private val appPkg: () -> String? = { null }) : LinearLayout(ctx) {
     private val ui = Handler(Looper.getMainLooper())
     private val rec = Recorder()
+    private var pipe: Pipeline? = null
     private val dp = resources.displayMetrics.density
     val status = TextView(ctx)
     private val bar = TextView(ctx)
@@ -64,7 +65,7 @@ class TalkBar(ctx: Context, private val onText: (String) -> Unit, private val on
                 if (latched) { latched = false; finish(); return }
                 if (!ready()) { refresh(); onNeedSetup(); return }
                 v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
-                downAt = SystemClock.uptimeMillis(); rec.start()
+                downAt = SystemClock.uptimeMillis(); rec.start(); pipe?.dead = true; pipe = Pipeline(context, rec, worker)
                 bar.text = "LISTENING... RELEASE TO TYPE"; bg.setColor(Color.parseColor("#C62828")); pulse()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -75,23 +76,24 @@ class TalkBar(ctx: Context, private val onText: (String) -> Unit, private val on
         }
     }
 
-    private fun pulse() { if (!rec.isRunning) return; status.text = "Listening " + "|".repeat((rec.level * 30).toInt().coerceIn(1, 20)); ui.postDelayed({ pulse() }, 120) }
+    private fun pulse() { if (!rec.isRunning) return; pipe?.poll(); status.text = "Listening " + "|".repeat((rec.level * 30).toInt().coerceIn(1, 20)); ui.postDelayed({ pulse() }, 120) }
 
-    fun cancel() { if (rec.isRunning) rec.stop(); latched = false; busy = false; refresh() }
+    fun cancel() { pipe?.dead = true; pipe = null; if (rec.isRunning) rec.stop(); latched = false; busy = false; refresh() }
 
     private fun finish() {
-        val samples = rec.stop(); busy = true
+        val tTap = SystemClock.uptimeMillis()
+        val p = pipe ?: Pipeline(context, rec, worker); pipe = null
+        val rest = if (p.seconds < 0.7f) { rec.stop(); null } else p.stopAndRemainder(); busy = true
         bar.text = "TRANSCRIBING..."; bg.setColor(Color.parseColor("#455A64")); status.text = "Transcribing on-device..."
         val pkg = appPkg()
         worker.execute {
-            val t0 = SystemClock.uptimeMillis()
-            val r: Any = try { if (samples.size < 16000 * 0.7) "" else { val raw = Asr.transcribe(context, samples); raw to PostProcessor.process(context, raw) } } catch (t: Throwable) { t }
-            val ms = SystemClock.uptimeMillis() - t0
+            val r: Any = try { if (rest == null) "" else { val raw = p.finishOnWorker(rest); raw to PostProcessor.process(context, raw) } } catch (t: Throwable) { t }
+            val ms = SystemClock.uptimeMillis() - tTap
             ui.post {
                 busy = false; refresh()
                 when (r) {
                     is Pair<*, *> -> { val txt = r.second as String
-                        if (txt.isNotEmpty()) { onText(txt); History.add(context, r.first as String, txt, pkg, ms); status.text = "Typed in $ms ms (on-device)" } else status.text = "Didn't catch that" }
+                        if (txt.isNotEmpty()) { onText(txt); val raw = r.first as String; worker.execute { try { History.add(context, raw, txt, pkg, ms) } catch (_: Throwable) {} }; status.text = "Typed in $ms ms (on-device)" } else status.text = "Didn't catch that" }
                     is Throwable -> { refresh(); status.text = "Error: ${r.message}" }
                     else -> status.text = "Too short - hold a bit longer"
                 }

@@ -32,6 +32,12 @@ g mail => Gmail"""
         else Regex("""(?i)\b""" + Regex.escape(p[0].trim()).replace(" ", """\E[\s\-]+\Q""") + """\b""") to p[1].trim()
     }
 
+    // The dictionary is parsed into regexes once and reused until the text changes (it used to be rebuilt on every dictation).
+    @Volatile private var dictCache: Pair<String, List<Pair<Regex, String>>>? = null
+    private fun dictFor(s: String): List<Pair<Regex, String>> = dictCache?.takeIf { it.first == s }?.second ?: parseDict(s).also { dictCache = s to it }
+    private val TAGS = Regex("""\[[^\]]*\]"""); private val WS = Regex("\\s+"); private val SPACE_PUNCT = Regex("""[ \t]+([,.!?])""")
+    private val MULTI_SPACE = Regex("""[ \t]{2,}"""); private val LEAD = Regex("""^[\s,]+"""); private val SENT_START = Regex("""(^|[.!?]\s+|\n)([a-z])""")
+
     fun process(c: Context, raw: String): String {
         val pr = Prefs.get(c)
         return processWith(raw, pr.getBoolean("commands", true), pr.getBoolean("fillers", true), pr.getString("dict", DEFAULT_DICT) ?: "", pr.getBoolean("salon", false))
@@ -39,14 +45,14 @@ g mail => Gmail"""
 
     /** Pure version (no Android Context) so it can be unit-tested on the JVM. */
     fun processWith(raw: String, commands: Boolean, fillers: Boolean, dict: String, salon: Boolean): String {
-        var t = raw.replace(Regex("""\[[^\]]*\]"""), " ").replace(Regex("\\s+"), " ").trim()
+        var t = raw.replace(TAGS, " ").replace(WS, " ").trim()
         if (t.isEmpty()) return t
         if (commands) for ((r, v) in COMMANDS) t = t.replace(r, v)
         if (fillers) { t = t.replace(FILLERS, "$1").replace(STUTTER, "$1") }
-        for ((r, v) in parseDict(dict)) t = t.replace(r, Regex.escapeReplacement(v))
+        for ((r, v) in dictFor(dict)) t = t.replace(r, Regex.escapeReplacement(v))
         if (salon) t = Salon.shades(t)
-        t = t.replace(Regex("""[ \t]+([,.!?])"""), "$1").replace(Regex("""[ \t]{2,}"""), " ").replace(Regex("""^[\s,]+"""), "").trim()
-        t = t.replace(Regex("""(^|[.!?]\s+|\n)([a-z])""")) { it.groupValues[1] + it.groupValues[2].uppercase() }
+        t = t.replace(SPACE_PUNCT, "$1").replace(MULTI_SPACE, " ").replace(LEAD, "").trim()
+        t = t.replace(SENT_START) { it.groupValues[1] + it.groupValues[2].uppercase() }
         return t
     }
 }

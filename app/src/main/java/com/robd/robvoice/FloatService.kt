@@ -59,6 +59,7 @@ class FloatService : Service() {
     @Volatile private var previewBusy = false
     @Volatile private var previewMs = 0L
     private val rec = Recorder()
+    private var pipe: Pipeline? = null
     private var busy = false
     private var failed = false
     private val dp get() = resources.displayMetrics.density
@@ -91,6 +92,7 @@ class FloatService : Service() {
 
     override fun onDestroy() {
         running = false; DictateA11y.onFocusChange = null
+        pipe?.dead = true; pipe = null
         if (rec.isRunning) rec.stop()
         if (::root.isInitialized) { if (attached === root) detach() else try { wm.removeViewImmediate(root) } catch (_: Throwable) {} }
         super.onDestroy()
@@ -190,7 +192,7 @@ class FloatService : Service() {
         if (!Models.isReady(this, Models.selected(this))) { toast("Speech model not downloaded - open NoCloud Voice"); return }
         idle.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
         try { rec.start() } catch (t: Throwable) { toast("Mic busy: ${t.message}"); return }
-        gen++
+        gen++; pipe?.dead = true; pipe = Pipeline(this, rec, TalkBar.worker)
         checkV.visibility = View.VISIBLE; spin.visibility = View.GONE; xV.isEnabled = true; xV.alpha = 1f; wave.isEnabled = true
         idle.visibility = View.GONE; active.visibility = View.VISIBLE; wave.reset(); applyIdleLook(); relayout(); tick()
         if (Prefs.get(this).getBoolean("live_words", true)) { showCard("Listening\u2026"); val g = gen; ui.postDelayed({ preview(g) }, 1200) } else showCard(null)
@@ -210,14 +212,14 @@ class FloatService : Service() {
                 ui.post { if (g == gen && rec.isRunning && !txt.isNullOrBlank()) showCard(tail(if (cut) "\u2026" + txt.substringAfter(' ') else txt)) }
             }
         }
-        ui.postDelayed({ preview(g) }, maxOf(1200L, previewMs * 2)) // back off on slow phones/models to save battery
+        ui.postDelayed({ preview(g) }, maxOf(1500L, previewMs * 3)) // back off on slow phones/models to save battery and leave CPU for the real decode
     }
 
     private fun relayout() { clampForWidth(); try { wm.updateViewLayout(root, lp) } catch (_: Throwable) {} }
-    private fun tick() { if (!rec.isRunning) return; wave.push(rec.level); ui.postDelayed({ tick() }, 60) }
+    private fun tick() { if (!rec.isRunning) return; wave.push(rec.level); pipe?.poll(); ui.postDelayed({ tick() }, 60) }
     private fun showIdle() { active.visibility = View.GONE; idle.visibility = View.VISIBLE; busy = false; placeFromPrefs(); relayout(); applyIdleLook() }
 
-    private fun cancel() { if (busy) return; gen++; if (rec.isRunning) rec.stop(); showCard(null); showIdle() }
+    private fun cancel() { if (busy) return; gen++; pipe?.dead = true; pipe = null; if (rec.isRunning) rec.stop(); showCard(null); showIdle() }
 
     /** Result flash on the card, then back to idle. */
     private fun done(msg: String, ok: Boolean) {
@@ -237,18 +239,20 @@ class FloatService : Service() {
         showCard("Transcribing\u2026" + (shown?.let { "\n$it" } ?: ""))
         // 2) Stop the mic and transcribe off the main thread.
         val pkg = DictateA11y.instance?.focusedPkg()
+        val tTap = SystemClock.uptimeMillis()
         ui.post {
-            val raw0 = rec.stop(); val samples = Recorder.trim(raw0)
+            val p = pipe ?: Pipeline(this, rec, TalkBar.worker); pipe = null
+            val secs = p.seconds; val rest = p.stopAndRemainder()
             TalkBar.worker.execute {
                 val t0 = SystemClock.uptimeMillis()
-                val r: Any = try { if (samples.size < 16000 * 0.5) "" else { val raw = Asr.transcribe(this, samples); raw to PostProcessor.process(this, raw) } } catch (t: Throwable) { t }
-                val ms = SystemClock.uptimeMillis() - t0
-                Prefs.get(this).edit().putString("last_timing", "Last dictation: %.1f s of speech (%.1f s recorded), transcribed in %d ms.".format(samples.size / 16000f, raw0.size / 16000f, ms)).apply()
+                val r: Any = try { if (rest == null) "" else { val raw = p.finishOnWorker(rest); raw to PostProcessor.process(this, raw) } } catch (t: Throwable) { t }
+                val t1 = SystemClock.uptimeMillis(); val ms = t1 - tTap
+                Prefs.get(this).edit().putString("last_timing", "Last dictation: %.1f s recorded, %.1f s decoded after you tapped done. Text ready %d ms after the tap (%d ms decoding, %d ms waiting for earlier work).".format(secs, (rest?.size ?: 0) / 16000f, ms, t1 - t0, t0 - tTap)).apply()
                 ui.post {
                     when (r) {
                         is Pair<*, *> -> { val txt = r.second as String
                             if (txt.isEmpty()) done("Didn't catch that", false) else {
-                                History.add(this, r.first as String, txt, pkg, ms)
+                                TalkBar.worker.execute { try { History.add(this, r.first as String, txt, pkg, ms) } catch (_: Throwable) {} } // after the text is in, off the UI thread
                                 val a = DictateA11y.instance
                                 if (a == null || !DictateA11y.connected) {
                                     (getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager).setPrimaryClip(android.content.ClipData.newPlainText("NoCloud Voice", txt))

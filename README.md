@@ -4,6 +4,8 @@ Free, on-device voice dictation for Android phones. You get a dictation **keyboa
 
 > Free, on-device voice dictation for Android phones. Developed and tested on a Google Pixel. It should work on other Android phones running Android 10 or newer with a 64-bit ARM (arm64-v8a) processor. Please [tell me in Issues](https://github.com/robdilella-apps/nocloud-voice/issues) which phones work for you. Android only.
 
+> **Latest: [0.3.1](https://github.com/robdilella-apps/nocloud-voice/releases/latest).** If you're on 0.3.0, update. The model host changed its files on Nov 7, 2026, so first-time model downloads fail on 0.3.0. 0.3.1 fixes that and makes long dictations much faster. Install it over 0.3.0; your settings are kept.
+
 ## Why I built this
 I'm Rob DiLella, and I dictate a lot on my phone. The cloud-based dictation app I tried kept losing my text when I walked outside where cell service is bad. It needed a connection to send my audio off and bring the words back, so when the signal dropped, my words were gone. Google's built-in voice typing leans on the cloud too.
 
@@ -34,7 +36,7 @@ _Coming soon._
 <!-- docs/keyboard.png, docs/bubble.png, docs/setup.png -->
 
 ## Install on Android (from GitHub Releases)
-1. On your phone, open this repo's **[Releases](https://github.com/robdilella-apps/nocloud-voice/releases)** page and tap **NoCloud-Voice-0.3.0.apk** under *Assets*.
+1. On your phone, open this repo's **[Releases](https://github.com/robdilella-apps/nocloud-voice/releases)** page and tap **NoCloud-Voice-0.3.1.apk** under *Assets*.
 2. Chrome may say the file could be harmful. Tap **Download anyway**.
 3. When it finishes, tap **Open**. (Or open the **Files** app > **Downloads** and tap the APK.)
 4. If you see *"For your security, your phone is not allowed to install unknown apps from this source"*, tap **Settings**, turn on **Allow from this source**, then go back.

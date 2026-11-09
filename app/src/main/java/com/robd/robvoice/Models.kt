@@ -10,7 +10,8 @@ import java.net.URL
 data class MFile(val name: String, val size: Long, val sha256: String?)
 
 /** Model catalog. Files are fetched once from Hugging Face (public mirrors of the sherpa-onnx exports), verified, then used offline. */
-data class ModelSpec(val id: String, val label: String, val repo: String, val files: List<MFile>, val approxMb: Int, val license: String)
+data class ModelSpec(val id: String, val label: String, val repo: String, val files: List<MFile>, val approxMb: Int, val license: String,
+    /** Hugging Face commit the hashes were taken from. Pinned so a re-upload on "main" can't break downloads. */ val rev: String = "main")
 
 object Models {
     val PARAKEET = ModelSpec(
@@ -19,7 +20,8 @@ object Models {
         listOf(MFile("encoder.int8.onnx", 652184296, "a32b12d17bbbc309d0686fbbcc2987b5e9b8333a7da83fa6b089f0a2acd651ab"),
             MFile("decoder.int8.onnx", 7257753, "b6bb64963457237b900e496ee9994b59294526439fbcc1fecf705b31a15c6b4e"),
             MFile("joiner.int8.onnx", 1739080, "7946164367946e7f9f29a122407c3252b680dbae9a51343eb2488d057c3c43d2"),
-            MFile("tokens.txt", 9384, null)), 662, "CC-BY-4.0 (NVIDIA)")
+            MFile("tokens.txt", 9384, null)), 662, "CC-BY-4.0 (NVIDIA)",
+        rev = "1ab9323565ddb038682214b292f588070a538ce2") // "main" was re-exported 2026-11-07 with different files; this commit matches the hashes above
     val MOONSHINE = ModelSpec(
         "moonshine-base", "Moonshine Base EN (int8) - smaller + faster fallback, slightly less accurate",
         "csukuangfj/sherpa-onnx-moonshine-base-en-int8",
@@ -27,7 +29,8 @@ object Models {
             MFile("encode.int8.onnx", 50311494, "7e38770f776f2e5583a53b052936005df2ba5c833d7e09c2a5fd796b94bf73e2"),
             MFile("uncached_decode.int8.onnx", 122120451, "c01f4b35093bcac20d352d23a75a539e772964579f9d024a90e5e6f09cae9987"),
             MFile("cached_decode.int8.onnx", 99983837, "2db74e51cedf64a8b1be3c8192e0bb5e4923af0e90bd9e87f8e8771873f8ea03"),
-            MFile("tokens.txt", 436688, null)), 287, "MIT (Useful Sensors)")
+            MFile("tokens.txt", 436688, null)), 287, "MIT (Useful Sensors)",
+        rev = "052b0798ad1bf046a140fdd4efcd9426530fa3f5")
     val ALL = listOf(PARAKEET, MOONSHINE)
 
     fun dir(ctx: Context, m: ModelSpec) = File(ctx.filesDir, "models/${m.id}")
@@ -54,9 +57,9 @@ object Models {
         return md.digest().joinToString("") { "%02x".format(it) }
     }
 
-    /** Opens the raw-file URL (huggingface .../resolve/main/<file>), following redirects to the CDN, with optional Range. */
+    /** Opens the raw-file URL (huggingface .../resolve/<pinned commit>/<file>), following redirects to the CDN, with optional Range. */
     private fun open(m: ModelSpec, f: MFile, from: Long): HttpURLConnection {
-        var url = URL("https://huggingface.co/${m.repo}/resolve/main/${f.name}")
+        var url = URL("https://huggingface.co/${m.repo}/resolve/${m.rev}/${f.name}")
         repeat(6) {
             val c = url.openConnection() as HttpURLConnection
             c.instanceFollowRedirects = false; c.connectTimeout = 20000; c.readTimeout = 60000

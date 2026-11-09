@@ -6,8 +6,8 @@ android {
         applicationId = "com.robd.robvoice"
         minSdk = 29
         targetSdk = 35
-        versionCode = 7
-        versionName = "0.3.0"
+        versionCode = 8
+        versionName = "0.3.1"
         ndk { abiFilters += (project.findProperty("abis") as String? ?: "arm64-v8a").split(",") } // 64-bit ARM Android phones
     }
     buildTypes { release { isMinifyEnabled = false } }
